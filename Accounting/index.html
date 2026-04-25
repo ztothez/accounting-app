@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none';" />
+  <title>Accounting App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="accounting-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Accounting App</div>
+        <h1>Accounting App</h1>
+      </div>
+      <div class="status" aria-label="Local data status">
+        <span class="pulse"></span>
+        Local-only storage
+      </div>
+    </header>
+
+    <section class="workspace" aria-label="Accounting apps">
+      <a class="module ledger" href="../Ledger/Ledger.html">
+        <div class="module-kicker">01</div>
+        <h2>Ledger</h2>
+        <p>Monthly income, expenses, paid status, custom columns, imports, and exports.</p>
+        <span>Open ledger</span>
+      </a>
+
+      <a class="module debts" href="../Debts/Debts.html">
+        <div class="module-kicker">02</div>
+        <h2>Debts</h2>
+        <p>Outstanding balances, repayment progress, monthly commitments, and payment logs.</p>
+        <span>Open debts</span>
+      </a>
+
+      <div class="signal-panel" aria-label="System baseline">
+        <div class="panel-row">
+          <span>Seed data</span>
+          <strong>Reset</strong>
+        </div>
+        <div class="panel-row">
+          <span>Runtime</span>
+          <strong>Static React</strong>
+        </div>
+        <div class="panel-row">
+          <span>Privacy</span>
+          <strong>Browser storage</strong>
+        </div>
+        <div class="matrix" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

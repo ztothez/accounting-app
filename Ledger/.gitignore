@@ -1,0 +1,6 @@
+certs/
+__pycache__/
+*.xlsx
+*.xls
+seed.json
+*.log

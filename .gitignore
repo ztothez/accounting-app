@@ -1,0 +1,42 @@
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.codex
+
+# Python runtime artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local finance data and exports
+*.xlsx
+*.xls
+*.csv
+*.db
+*.sqlite
+*.sqlite3
+*export*.json
+*-backup*.json
+Ledger/seed.json
+Debts/seed.json
+
+# Local TLS material
+certs/
+*.crt
+*.csr
+*.key
+*.pem
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# Separate repository
+roadmap/
