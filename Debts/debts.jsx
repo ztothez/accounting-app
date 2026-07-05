@@ -3,8 +3,6 @@ const { useState, useEffect, useMemo } = React;
 
 const STORAGE_KEY = 'debts.v1';
 const THEME_KEY = 'ledger.theme';
-const ACCOUNTING_HOME = '../Accounting/index.html';
-const LEDGER_URL = '../Ledger/Ledger.html';
 
 (function initTheme(){
   const saved = localStorage.getItem(THEME_KEY);
@@ -89,10 +87,7 @@ const calculateFormula = (expression) => {
   const result = parseExpression();
   return index === normalized.length && Number.isFinite(result) ? result : 0;
 };
-const uid = () => {
-  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-  return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-};
+const uid = () => Math.random().toString(36).slice(2, 10);
 const isDraftDebt = (d) =>
   num(d.total) === 0 &&
   num(d.paid) === 0 &&
@@ -151,7 +146,7 @@ function normalizeStore(store) {
       paid: d.paid ?? 0,
       monthly: d.monthly ?? 0,
       note: d.note || '',
-      payments: (Array.isArray(d.payments) ? d.payments : []).map(p => ({ ...p, id: p.id || uid() })),
+      payments: Array.isArray(d.payments) ? d.payments : [],
       custom: d.custom || {},
     })),
   };
@@ -242,7 +237,7 @@ function App() {
     i.click();
   };
   const resetData = () => {
-    if (!confirm('Reset to original seed data?')) return;
+    if (!confirm('Reset this browser to an empty baseline?')) return;
     localStorage.removeItem(STORAGE_KEY);
     setStore(loadStore());
   };
@@ -295,8 +290,8 @@ function App() {
       <footer className="footnote">
         <div>DEBTS · {store.debts.length} on file · {fmt(sumLeft)} € outstanding</div>
         <div className="right-actions">
-          <a href={ACCOUNTING_HOME}>Accounting</a>
-          <a href={LEDGER_URL}>Ledger</a>
+          <a href="https://ledger.local/">Ledger</a>
+          <a href="https://career.local/">Career</a>
           <button onClick={exportJson}>Export</button>
           <button onClick={importJson}>Import</button>
           <button onClick={resetData}>Reset</button>
@@ -322,7 +317,7 @@ function Masthead() {
     <header className="masthead">
       <div className="brand">
         <div className="mark">De<em>b</em>ts</div>
-        <div className="sub">Liability Console</div>
+        <div className="sub">What You Owe · Velat</div>
       </div>
       <div className="meta">
         <div style={{display:'flex', alignItems:'center', gap:14, justifyContent:'flex-end'}}>
@@ -341,9 +336,11 @@ function Masthead() {
 function SubNav({ active }) {
   return (
     <div className="sub-nav">
-      <a href={ACCOUNTING_HOME} className="sub-nav-link">Accounting</a>
-      <a href={LEDGER_URL} className={'sub-nav-link' + (active === 'ledger' ? ' active' : '')}>Ledger</a>
-      <a href="Debts.html" className={'sub-nav-link' + (active === 'debts' ? ' active' : '')}>Debts</a>
+      <a href="https://ledger.local/" className={'sub-nav-link' + (active === 'ledger' ? ' active' : '')}>Monthly Ledger</a>
+      <a href="https://debts.local/" className={'sub-nav-link' + (active === 'debts' ? ' active' : '')}>Debts</a>
+      <a href="https://career.local/" className={'sub-nav-link' + (active === 'career' ? ' active' : '')}>Career</a>
+      <a href="https://videos.local/" className={'sub-nav-link' + (active === 'videos' ? ' active' : '')}>Videos</a>
+      <a href="https://pdf.local/" className={'sub-nav-link' + (active === 'pdf' ? ' active' : '')}>PDF</a>
     </div>
   );
 }
@@ -447,7 +444,7 @@ function DebtTable({ debts, customCols, setDebt, delDebt, setCustom, renameCol, 
                     inputMode={c.type==='num' ? 'decimal' : undefined}
                     step="0.01"
                     value={(d.custom?.[c.id]) ?? ''}
-                    onChange={e => setCustom(d.id, c.id, c.type === 'num' ? num(e.target.value) : e.target.value)} />
+                    onChange={e => setCustom(d.id, c.id, e.target.value)} />
                 </td>
               ))}
               <td className="check-cell">

@@ -3,10 +3,14 @@ const { useState, useEffect, useMemo, useRef } = React;
 
 const STORAGE_KEY = 'ledger.v1';
 const THEME_KEY = 'ledger.theme';
-const ACCOUNTING_HOME = '../Accounting/index.html';
-const DEBTS_URL = '../Debts/Debts.html';
 
-// init theme before mount
+const LEDGER_URL = 'https://ledger.local/';
+const DEBTS_URL = 'https://debts.local/';
+const CAREER_URL = 'https://career.local/';
+const VIDEOS_URL = 'https://videos.local/';
+const PDF_URL = 'https://pdf.local/';
+
+// init theme before mount — design system default: dark OLED
 (function initTheme(){
   const saved = localStorage.getItem(THEME_KEY);
   const theme = saved || 'dark';
@@ -36,10 +40,7 @@ const num = (v) => {
   const n = parseFloat(cleaned);
   return isNaN(n) ? 0 : n;
 };
-const uid = () => {
-  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-  return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-};
+const uid = () => Math.random().toString(36).slice(2, 10);
 
 // parse "April 2026" / "Kesäkuu 2025" etc into sortable key
 const MONTH_ORDER = {
@@ -73,8 +74,16 @@ function nextMonthLabel(currentLabel) {
   const names = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
   return `${names[nm]} ${ny}`;
 }
-function currentMonthLabel() {
-  return new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+function retargetDateToMonth(due, monthLabel) {
+  if (!due) return due;
+  const match = String(due).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const { mn, year } = parseMonthLabel(monthLabel);
+  if (!match || !mn || !year) return due;
+
+  const originalDay = parseInt(match[3], 10);
+  const lastDay = new Date(year, mn, 0).getDate();
+  const day = Math.min(originalDay, lastDay);
+  return `${year}-${String(mn).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 function dateClass(due) {
@@ -117,39 +126,22 @@ function useTheme() {
 function loadStore() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return normalizeStore(JSON.parse(raw));
+    if (raw) return JSON.parse(raw);
   } catch (e) {}
-  // first-time seed
   const seed = window.SEED_MONTHS || [];
-  const months = seed.map((m) => normalizeMonth(m));
+  const months = seed.map((m) => ({
+    id: uid(),
+    label: m.label,
+    income: (m.income || []).map(r => ({ id: uid(), ...r, custom: {} })),
+    expenses: (m.expenses || []).map(r => ({ id: uid(), ...r, custom: {} })),
+    customCols: { income: [], expenses: [] },
+    saldo: 0, // carry-over balance
+  }));
   months.sort((a,b) => sortKey(a.label) - sortKey(b.label));
   return { months, activeId: months[months.length - 1]?.id || null };
 }
-function normalizeMonth(m = {}) {
-  return {
-    id: uid(),
-    ...m,
-    label: m.label || currentMonthLabel(),
-    income: (Array.isArray(m.income) ? m.income : []).map(r => ({ ...r, id: r.id || uid(), custom: r.custom || {} })),
-    expenses: (Array.isArray(m.expenses) ? m.expenses : []).map(r => ({ ...r, id: r.id || uid(), custom: r.custom || {} })),
-    customCols: {
-      income: Array.isArray(m.customCols?.income) ? m.customCols.income : [],
-      expenses: Array.isArray(m.customCols?.expenses) ? m.customCols.expenses : [],
-    },
-    saldo: m.saldo ?? 0,
-  };
-}
-function normalizeStore(store) {
-  const source = store && typeof store === 'object' ? store : {};
-  const months = (Array.isArray(source.months) ? source.months : []).map(normalizeMonth);
-  months.sort((a,b) => sortKey(a.label) - sortKey(b.label));
-  const activeId = months.some(m => m.id === source.activeId)
-    ? source.activeId
-    : months[months.length - 1]?.id || null;
-  return { months, activeId };
-}
 function saveStore(s) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeStore(s)));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
 }
 
 // ---------- App ----------
@@ -205,6 +197,7 @@ function App() {
             .map(r => ({
               ...r, id: uid(),
               paid: resetPaid ? false : r.paid,
+              due: retargetDateToMonth(r.due, label),
               custom: { ...(r.custom || {}) },
             }));
         }
@@ -250,7 +243,7 @@ function App() {
         const data = JSON.parse(text);
         if (data.months && Array.isArray(data.months)) {
           if (confirm(`Replace your data with ${data.months.length} months from this file?`)) {
-            setStore(normalizeStore(data));
+            setStore(data);
           }
         }
       } catch (err) { alert('Invalid file'); }
@@ -259,7 +252,7 @@ function App() {
   };
 
   const resetData = () => {
-    if (!confirm('Reset to original seed data? Your edits will be lost.')) return;
+    if (!confirm('Reset this browser to an empty baseline? Your local edits will be lost.')) return;
     localStorage.removeItem(STORAGE_KEY);
     setStore(loadStore());
   };
@@ -268,6 +261,7 @@ function App() {
     return (
       <div className="app">
         <Masthead />
+        <SubNav active="career" />
         <div className="empty" style={{padding:60}}>
           No months yet.
           <div style={{marginTop:20}}>
@@ -305,8 +299,8 @@ function App() {
       <footer className="footnote">
         <div>LEDGER · {activeMonth.label} · {sortedMonths.length} {sortedMonths.length===1?'month':'months'} on file</div>
         <div className="right-actions">
-          <a href={ACCOUNTING_HOME}>Accounting</a>
           <a href={DEBTS_URL}>Debts</a>
+          <a href={CAREER_URL}>Career</a>
           <button onClick={() => renamePrompt(activeMonth, renameMonth)}>Rename month</button>
           <button onClick={() => deleteMonth(activeMonth.id)}>Delete month</button>
           <button onClick={exportJson}>Export</button>
@@ -339,11 +333,11 @@ function Masthead({ activeMonth }) {
     <header className="masthead">
       <div className="brand">
         <div className="mark">Le<em>d</em>ger</div>
-        <div className="sub">Monthly Accounting Console</div>
+        <div className="sub">Personal Monthly Reckoning</div>
       </div>
       <div className="meta">
         <div style={{display:'flex', alignItems:'center', gap:14, justifyContent:'flex-end'}}>
-          <button className="theme-toggle" onClick={toggleTheme} title={theme==='dark'?'Switch to light':'Switch to dark'} aria-label="Toggle theme">
+          <button className="theme-toggle" type="button" onClick={toggleTheme} title={theme==='dark'?'Switch to light':'Switch to dark'} aria-label="Toggle theme">
             {theme === 'dark' ? <Icon.Sun /> : <Icon.Moon />}
           </button>
           <span>Issue</span>
@@ -357,11 +351,13 @@ function Masthead({ activeMonth }) {
 
 function SubNav({ active }) {
   return (
-    <div className="sub-nav">
-      <a href={ACCOUNTING_HOME} className="sub-nav-link">Accounting</a>
-      <a href="Ledger.html" className={'sub-nav-link' + (active === 'ledger' ? ' active' : '')}>Ledger</a>
-      <a href={DEBTS_URL} className="sub-nav-link">Debts</a>
-    </div>
+    <nav className="sub-nav" aria-label="Personal apps">
+      <a href={LEDGER_URL} className={'sub-nav-link' + (active === 'ledger' ? ' active' : '')}>Ledger</a>
+      <a href={DEBTS_URL} className={'sub-nav-link' + (active === 'debts' ? ' active' : '')}>Debts</a>
+      <a href={CAREER_URL} className={'sub-nav-link' + (active === 'career' ? ' active' : '')}>Career</a>
+      <a href={VIDEOS_URL} className={'sub-nav-link' + (active === 'videos' ? ' active' : '')}>Videos</a>
+      <a href={PDF_URL} className={'sub-nav-link' + (active === 'pdf' ? ' active' : '')}>PDF</a>
+    </nav>
   );
 }
 
@@ -436,7 +432,7 @@ function SummaryBand({ month, updateMonth }) {
           step="0.01"
           value={month.saldo || ''}
           placeholder="0.00"
-          onChange={e => updateMonth(m => ({ ...m, saldo: num(e.target.value) }))}
+          onChange={e => updateMonth(m => ({ ...m, saldo: e.target.value }))}
         />
         <div className="sum-foot">opening balance from last month</div>
       </div>
@@ -488,7 +484,11 @@ function Section({ kind, month, updateMonth }) {
     if (!confirm('Delete this column for this month?')) return;
     updateMonth(m => ({
       ...m,
-      customCols: { ...m.customCols, [kind]: (m.customCols[kind]||[]).filter(c => c.id !== cid) }
+      customCols: { ...m.customCols, [kind]: (m.customCols[kind]||[]).filter(c => c.id !== cid) },
+      [kind]: m[kind].map(r => {
+        const { [cid]: _removed, ...custom } = r.custom || {};
+        return { ...r, custom };
+      }),
     }));
   };
 
@@ -555,10 +555,10 @@ function IncomeTable({ rows, customCols, setRow, setCustom, delRow, renameCol, d
                   inputMode={c.type==='num' ? 'decimal' : undefined}
                   step="0.01"
                   value={(r.custom?.[c.id]) ?? ''}
-                  onChange={e => setCustom(r.id, c.id, c.type==='num' ? num(e.target.value) : e.target.value)} />
+                  onChange={e => setCustom(r.id, c.id, e.target.value)} />
               </td>
             ))}
-            <td><input className="cell-input num" type="text" inputMode="decimal" step="0.01" value={r.amount || ''} placeholder="0.00" onChange={e => setRow(r.id, { amount: num(e.target.value) })} /></td>
+            <td><input className="cell-input num" type="text" inputMode="decimal" step="0.01" value={r.amount || ''} placeholder="0.00" onChange={e => setRow(r.id, { amount: e.target.value })} /></td>
           </tr>
         ))}
       </tbody>
@@ -628,10 +628,10 @@ function ExpenseTable({ rows, customCols, setRow, setCustom, delRow, renameCol, 
                     inputMode={c.type==='num' ? 'decimal' : undefined}
                     step="0.01"
                     value={(r.custom?.[c.id]) ?? ''}
-                    onChange={e => setCustom(r.id, c.id, c.type==='num' ? num(e.target.value) : e.target.value)} />
+                    onChange={e => setCustom(r.id, c.id, e.target.value)} />
                 </td>
               ))}
-              <td><input className="cell-input num" type="text" inputMode="decimal" step="0.01" value={r.amount || ''} placeholder="0.00" onChange={e => setRow(r.id, { amount: num(e.target.value) })} /></td>
+              <td><input className="cell-input num" type="text" inputMode="decimal" step="0.01" value={r.amount || ''} placeholder="0.00" onChange={e => setRow(r.id, { amount: e.target.value })} /></td>
               <td className="check-cell">
                 <div
                   className={'check ' + (r.paid ? 'on' : '')}
@@ -672,7 +672,7 @@ function ColHeaderEdit({ col, renameCol, delCol }) {
 function NewMonthModal({ months, fromId, onCreate, onClose }) {
   const sorted = months.slice().sort((a,b) => sortKey(a.label) - sortKey(b.label));
   const last = sorted[sorted.length - 1];
-  const suggested = last ? nextMonthLabel(last.label) : currentMonthLabel();
+  const suggested = last ? nextMonthLabel(last.label) : 'May 2026';
   const [label, setLabel] = useState(suggested);
   const [copyFromId, setCopyFromId] = useState(fromId || (last?.id || ''));
   const [copyIncome, setCopyIncome] = useState(true);

@@ -25,6 +25,12 @@ venv/
 *-backup*.json
 Ledger/seed.json
 Debts/seed.json
+Ledger/seed.js
+Debts/debts-seed.js
+downloads.json
+conversions.json
+.env
+*/.env
 
 # Local TLS material
 certs/
