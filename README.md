@@ -1,13 +1,6 @@
 # Accounting App
 
-Local-first accounting workspace for private monthly finance tracking.
-
-## Apps
-
-- `Ledger`: monthly income, expenses, due dates, paid status, custom columns, JSON import/export.
-- `Debts`: debt balances, repayment progress, monthly commitments, payment logs, custom columns.
-
-The apps store working data in browser `localStorage`. Personal seed data, spreadsheets, exports, TLS keys, and generated runtime files are intentionally excluded from the repository.
+Local organization accounting workspace for verified transactions, fiscal periods, manager review, audit history, and SQLite persistence.
 
 ## Run
 
@@ -15,26 +8,21 @@ The apps store working data in browser `localStorage`. Personal seed data, sprea
 python3 server.py
 ```
 
-Open:
+Open <http://localhost:5179/>. `/Accounting/` remains a compatibility alias.
 
-- `http://localhost:5173/Accounting/`
-- `http://localhost:5174/Ledger.html` with `python3 Ledger/server.py`
-- `http://localhost:5175/Debts.html` with `python3 Debts/server.py`
+The application stores its SQLite database at `Accounting/data/accounting.sqlite3` by default. Copy `Accounting/.env.example` to `Accounting/.env` to configure the port, host allowlist, authentication, or database path.
+
+## Accounting workflow
+
+- Transactions: view saved organization transactions by fiscal month.
+- New transaction: enter and verify all workbook fields before saving.
+- Review & sign-off: record an accountable manager approval for the period.
+- Audit trail: review local activity history.
+
+The transaction fields preserve the original workbook structure: Date, Credit / debit, Cash, Cash register, VAT 24% Rent 40%, VAT 24% Rent 25%, and Product sales 5%.
 
 ## Enterprise Runtime
 
-The Python servers use the shared `saas_runtime.py` layer:
+The Python server uses the shared `saas_runtime.py` layer for production env validation, optional Basic auth, allowed hosts, request IDs, security headers, health and metrics endpoints, and request body limits.
 
-- production env validation
-- optional Basic auth
-- allowed host checks
-- request IDs
-- security headers
-- `/healthz` and `/metrics`
-- request body limits
-
-Copy `.env.example` into the app folder you are deploying as `.env`, then set `APP_ENV=production`, `ALLOWED_HOSTS`, and `APP_BASIC_AUTH_*`.
-
-## Data Safety
-
-Use the in-app import/export controls for private backups. Do not commit exported JSON, spreadsheets, local certificates, `.env`, browser storage dumps, or seed files containing real data.
+Do not commit databases, exports, credentials, or other local client data.
