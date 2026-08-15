@@ -1,4 +1,0 @@
-.env
-*.local.json
-data/*.sqlite3
-backups/

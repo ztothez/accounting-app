@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 import mimetypes
+import os
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT.parent))
 
 from saas_runtime import EnterpriseHTTPMixin, build_settings, display_host  # noqa: E402
 
-SETTINGS = build_settings("Accounting", ROOT, 5173)
+SETTINGS = build_settings("Debts", ROOT, 5175)
 
 
-class AccountingHandler(EnterpriseHTTPMixin, SimpleHTTPRequestHandler):
+class DebtsHandler(EnterpriseHTTPMixin, SimpleHTTPRequestHandler):
     app_settings = SETTINGS
-    default_document = "Accounting/index.html"
+    default_document = "Debts.html"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -26,12 +27,12 @@ class AccountingHandler(EnterpriseHTTPMixin, SimpleHTTPRequestHandler):
             return
         if self.handle_enterprise_get(path):
             return
-        if path in ("/", "/Accounting", "/Accounting/"):
-            self.path = "/Accounting/index.html"
+        if path == "/":
+            self.path = "/Debts.html"
         return super().do_GET()
 
 
 if __name__ == "__main__":
     mimetypes.add_type("text/babel; charset=utf-8", ".jsx")
-    print(f"Accounting app listening on http://{display_host(SETTINGS.host)}:{SETTINGS.port}/Accounting/")
-    ThreadingHTTPServer((SETTINGS.host, SETTINGS.port), AccountingHandler).serve_forever()
+    print(f"Debts app listening on http://{display_host(SETTINGS.host)}:{SETTINGS.port}/Debts.html")
+    ThreadingHTTPServer((SETTINGS.host, SETTINGS.port), DebtsHandler).serve_forever()
